@@ -19,6 +19,7 @@ pipeline {
             post {
                 success {
                     archiveArtifacts 'target/*.jar'
+                    cleanWs()
                 }
             }
         }
