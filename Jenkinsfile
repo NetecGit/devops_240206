@@ -31,7 +31,7 @@ pipeline {
                 script {
                     sh 'env | sort'
 
-                    def server = Artifactory.server 'artifactory'
+                    def server = Artifactory.server 'artifactory2'
                     def repository = 'demo-repo'
 
                     if ("${GIT_BRANCH}" == 'origin/master') {
