@@ -2,26 +2,64 @@ pipeline {
     agent any
 
     tools {
-        // Install the Maven version configured as "M3" and add it to the path.
-        maven "Maven3.8.8"
+        maven 'maven3.8.8'
     }
 
     stages {
-        stage('Build') {
+        stage('Clonando ...') {
             steps {
-                // Get some code from a GitHub repository
                 git branch:'practica-4.2', url:'https://github.com/NetecGit/devops_240206.git'
-
-                // Run Maven on a Unix agent.
-                sh "mvn clean package -ntp -Dmaven.test.failure.ignore=true"
             }
+        }
+        stage('COmpilando...') {
+            steps {
+                sh 'mvn clean compile -B -ntp'
+            }
+        }
+        stage('Probando...') {
+            steps {
+                sh 'mvn test -B -ntp'
+            }
+        }
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests -B -ntp'
+            }
+        }
+        stage('Artifactory...') {
+            steps {
+                script {
+                    sh 'env | sort'
 
-            post {
-                success {
-                    archiveArtifacts 'target/*.jar'
-                    cleanWs()
+                    def server = Artifactory.server 'artifactory'
+                    def repository = 'demo-repo'
+
+                    if ("${GIT_BRANCH}" == 'origin/master') {
+                        repository = repository + '-release'
+                    } else {
+                        repository = repository + '-snapshot'
+                    }
+
+                    def uploadSpec = """
+                        {
+                            "files": [
+                                {
+                                    "pattern": "target/.*.jar",
+                                    "target": "${repository}",
+                                    "regexp": "true"
+                                }
+                            ]
+                        }
+                    """
+                    server.upload spec: uploadSpec
                 }
             }
+        }
+    }
+    post {
+        success {
+            archiveArtifacts artifacts: 'target/*.jar'
+            deleteDir()
         }
     }
 }
