@@ -31,7 +31,7 @@ pipeline {
       steps {
         script {
           //def pom = readMavenPom file: 'pom.xml'
-          def app = docker.build("blankiss/crudimage:v3.0")
+          def app = docker.build("blankiss/crudimage:v4.0")
 
           docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
             app.push()
