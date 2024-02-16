@@ -27,14 +27,15 @@ pipeline {
           archiveArtifacts artifacts: '**/target/*.jar'
       }
     }
-    stage('Enviar DockerHub') {
+   stage('Enviar DockerHub') {
       steps {
-        def pom = readMavenPom file: 'pom.xml'
-        def app = docker.build("danycenas/${pom.artifactId}:${pom.version}")
+        script {
+          //def pom = readMavenPom file: 'pom.xml'
+          def app = docker.build("blankiss/crudimage:v4.0")
 
-        docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
-          app.push()
-          app.push('latest')
+          docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
+            app.push()
+          }
         }
       }
     }
