@@ -1,65 +1,52 @@
 pipeline {
-    agent any
+  agent any
 
-    tools {
-        maven 'Maven3.8.8'
+  environment {
+    DOCKER_IMAGE = 'maven:3.8.5-eclipse-temurin-17'
+    GIT_REPOSITORY = 'https://github.com/NetecGit/devops_240206.git'
+    GIT_BRANCH = 'practica-4.2'
+  }
+
+  stages {
+    stage('Clonar Repositorio') {
+      steps {
+        git branch:"${GIT_BRANCH}", url:"${GIT_REPOSITORY}"
+      }
     }
-
-    stages {
-        stage('Clonando ...') {
-            steps {
-                git branch:'practica-4.2', url:'https://github.com/NetecGit/devops_240206.git'
-            }
+    stage('Compilar Proyecto') {
+      steps {
+        script {
+          docker.image("${DOCKER_IMAGE}").inside {
+            sh 'mvn clean package -Dmaven.test.skip=true -B -ntp'
+          }
         }
-        stage('COmpilando...') {
-            steps {
-                sh 'mvn clean compile -B -ntp'
-            }
-        }
-        stage('Probando...') {
-            steps {
-                sh 'mvn test -B -ntp'
-            }
-        }
-        stage('Package') {
-            steps {
-                sh 'mvn package -DskipTests -B -ntp'
-            }
-        }
-        stage('Artifactory...') {
-            steps {
-                script {
-                    sh 'env | sort'
-
-                    def server = Artifactory.server 'artifactory2'
-                    def repository = 'demo-repo'
-
-                    if ("${GIT_BRANCH}" == 'origin/master') {
-                        repository = repository + '-release'
-                    } else {
-                        repository = repository + '-snapshot'
-                    }
-
-                    def uploadSpec = """
-                        {
-                            "files": [
-                                {
-                                    "pattern": "target/.*.jar",
-                                    "target": "${repository}",
-                                    "regexp": "true"
-                                }
-                            ]
-                        }
-                    """
-                    server.upload spec: uploadSpec
-                }
-            }
-        }
+      }
     }
-    post {
-        success {
-            archiveArtifacts artifacts: 'target/*.jar'
-            deleteDir()
-        }
+    stage('Archivar Artefacto') {
+      steps {
+          archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+      }
     }
+   stage('Enviar DockerHub') {
+      steps {
+        script {
+          def pom = readMavenPom file: 'pom.xml'
+          def app = docker.build("blankiss/${pom.artifactId}:${pom.version}")
+
+          docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
+            app.push()
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo 'La compilación, el archivado del artefacto e imagen Docker Hub fueron exitosos.'
+    }
+    failure {
+      echo 'Algo falló'
+    }
+  }
 }
