@@ -24,14 +24,14 @@ pipeline {
     }
     stage('Archivar Artefacto') {
       steps {
-          archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+          archiveArtifacts artifacts: '**/target/*.jar'
       }
     }
    stage('Enviar DockerHub') {
       steps {
         script {
-          def pom = readMavenPom file: 'pom.xml'
-          def app = docker.build("blankiss/${pom.artifactId}:${pom.version}")
+          //def pom = readMavenPom file: 'pom.xml'
+          def app = docker.build("blankiss/crudimage:v3.0")
 
           docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
             app.push()
