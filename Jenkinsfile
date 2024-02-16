@@ -29,13 +29,13 @@ pipeline {
     }
    stage('Enviar DockerHub') {
       steps {
-        script {
-          def pom = readMavenPom file: 'pom.xml'
-          def app = docker.build("blankiss/crudimage:v4.0")
+        def pom = readMavenPom file: 'pom.xml'
+        def app = docker.build("danycenas/${pom.artifactId}:${pom.version}")
 
-          docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
-            app.push()
-          }
+        docker.withRegistry('https://registry.hub.docker.com/', 'dockerhub-credentials') {
+        app.push()
+        app.push('latest')
+        }
         }
       }
     }
